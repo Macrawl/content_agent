@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Like a Pro – Content Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: #2a2a3d;
+    --accent: #7c5cfc;
+    --accent2: #fc5c7d;
+    --accent3: #5cf0b8;
+    --text: #eeeef5;
+    --muted: #8888aa;
+    --ig: #e1306c;
+    --fb: #1877f2;
+    --tt: #010101;
+    --tt-text: #ffffff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 3rem 0 2.5rem;
+    position: relative;
+  }
+
+  .glow-blob {
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    height: 200px;
+    background: radial-gradient(ellipse, rgba(124,92,252,0.3) 0%, transparent 70%);
+    pointer-events: none;
+    filter: blur(20px);
+  }
+
+  .badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.9rem;
+    border-radius: 100px;
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.75rem;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    max-width: 420px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Form card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .card-title span { font-size: 1rem; }
+
+  /* Platform chips */
+  .platforms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .platform-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+
+  .platform-chip:hover { border-color: var(--accent); }
+
+  .platform-chip.active-ig { border-color: var(--ig); background: rgba(225,48,108,0.12); color: var(--ig); }
+  .platform-chip.active-fb { border-color: var(--fb); background: rgba(24,119,242,0.12); color: var(--fb); }
+  .platform-chip.active-tt { border-color: #888; background: rgba(150,150,150,0.1); color: #ccc; }
+
+  .platform-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* Content type */
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .type-btn {
+    padding: 0.65rem 0.75rem;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .type-btn:hover { border-color: var(--accent); }
+  .type-btn.active { border-color: var(--accent); background: rgba(124,92,252,0.15); color: #fff; }
+
+  /* Textarea */
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    resize: vertical;
+    min-height: 100px;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+  }
+
+  textarea:focus { outline: none; border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  /* Tone selector */
+  .tone-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tone-btn {
+    padding: 0.4rem 0.85rem;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tone-btn:hover { color: var(--text); border-color: var(--accent3); }
+  .tone-btn.active { border-color: var(--accent3); background: rgba(92,240,184,0.1); color: var(--accent3); }
+
+  /* Generate button */
+  .generate-btn {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.02em;
+  }
+
+  .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(124,92,252,0.4); }
+  .generate-btn:active { transform: translateY(0); }
+  .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn-shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+  }
+
+  .generate-btn:hover .btn-shimmer { transform: translateX(100%); }
+
+  /* Output area */
+  #output-section { display: none; }
+
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .output-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .platform-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .tag-ig { background: rgba(225,48,108,0.15); color: var(--ig); border: 1px solid rgba(225,48,108,0.3); }
+  .tag-fb { background: rgba(24,119,242,0.15); color: var(--fb); border: 1px solid rgba(24,119,242,0.3); }
+  .tag-tt { background: rgba(150,150,150,0.1); color: #ccc; border: 1px solid rgba(150,150,150,0.2); }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+    animation: fadeUp 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-card:nth-child(2) { animation-delay: 0.1s; }
+  .result-card:nth-child(3) { animation-delay: 0.2s; }
+
+  .result-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .result-content {
+    color: var(--text);
+    font-size: 0.92rem;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .copy-btn {
+    padding: 0.35rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .copy-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+  .copy-btn.copied { border-color: var(--accent3); color: var(--accent3); }
+
+  /* Loading */
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem;
+    gap: 1rem;
+  }
+
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading p {
+    color: var(--muted);
+    font-size: 0.88rem;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 1.5rem 0;
+  }
+
+  .label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.6rem;
+  }
+
+  .tip-box {
+    background: rgba(92,240,184,0.06);
+    border: 1px solid rgba(92,240,184,0.2);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    font-size: 0.83rem;
+    color: var(--accent3);
+    margin-top: 1rem;
+    line-height: 1.6;
+  }
+
+  .error-box {
+    background: rgba(252,92,125,0.08);
+    border: 1px solid rgba(252,92,125,0.25);
+    border-radius: 12px;
+    padding: 1rem;
+    color: var(--accent2);
+    font-size: 0.88rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="glow-blob"></div>
+    <div class="badge">✦ AI Content Agent</div>
+    <h1>Prompt Like a Pro<br>Content Creator</h1>
+    <p>Generate ready-to-post content for Instagram, Facebook & TikTok in seconds.</p>
+  </header>
+
+  <!-- Form Card -->
+  <div class="card">
+    <div class="card-title"><span>📱</span> Choose Platforms</div>
+    <div class="platforms">
+      <div class="platform-chip" id="chip-ig" onclick="togglePlatform('ig')">
+        <div class="platform-dot"></div> Instagram
+      </div>
+      <div class="platform-chip" id="chip-fb" onclick="togglePlatform('fb')">
+        <div class="platform-dot"></div> Facebook
+      </div>
+      <div class="platform-chip" id="chip-tt" onclick="togglePlatform('tt')">
+        <div class="platform-dot"></div> TikTok
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card-title"><span>✍️</span> Content Type</div>
+    <div class="type-grid">
+      <button class="type-btn active" onclick="selectType(this, 'promo')" id="type-promo">🔥 Promotional Post</button>
+      <button class="type-btn" onclick="selectType(this, 'tip')" id="type-tip">💡 Value / Tip Post</button>
+      <button class="type-btn" onclick="selectType(this, 'story')" id="type-story">📖 Personal Story</button>
+      <button class="type-btn" onclick="selectType(this, 'testimonial')" id="type-testimonial">⭐ Testimonial Request</button>
+      <button class="type-btn" onclick="selectType(this, 'cta')" id="type-cta">🛒 Call to Action</button>
+      <button class="type-btn" onclick="selectType(this, 'reel')" id="type-reel">🎬 TikTok/Reel Script</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card-title"><span>💬</span> Tone</div>
+    <div class="tone-row" style="margin-bottom:1.5rem">
+      <button class="tone-btn active" onclick="selectTone(this, 'Energetic & hype')">🔥 Hype</button>
+      <button class="tone-btn" onclick="selectTone(this, 'Friendly & conversational')">😊 Friendly</button>
+      <button class="tone-btn" onclick="selectTone(this, 'Professional & authoritative')">💼 Pro</button>
+      <button class="tone-btn" onclick="selectTone(this, 'Funny & relatable')">😂 Funny</button>
+      <button class="tone-btn" onclick="selectTone(this, 'Inspirational & motivational')">🚀 Inspiring</button>
+    </div>
+
+    <div class="card-title"><span>📝</span> Extra Context (Optional)</div>
+    <textarea id="extra-context" placeholder="e.g. I want to target Nigerian university students... or mention a discount... or focus on exam season..."></textarea>
+  </div>
+
+  <button class="generate-btn" onclick="generateContent()" id="gen-btn">
+    <div class="btn-shimmer"></div>
+    ✦ Generate Content
+  </button>
+
+  <!-- Output -->
+  <div id="output-section" style="margin-top:2rem">
+    <div id="output-inner"></div>
+  </div>
+
+</div>
+
+<script>
+  const BOOK_CONTEXT = `
+    Book: "Prompt Like a Pro: The Student Handbook for the AI Age"
+    Author: Rawlings Chukwudi
+    Platform: https://selar.com/56822s7411
+    Description: A practical guide teaching students how to use AI tools effectively for school, assignments, essays, and productivity. Targeted at secondary school students, university/college students, teachers, and parents of students.
+    Price point: Affordable digital ebook
+  `;
+
+  let selectedPlatforms = new Set(['ig']);
+  let selectedType = 'promo';
+  let selectedTone = 'Energetic & hype';
+
+  // Activate Instagram by default
+  document.getElementById('chip-ig').classList.add('active-ig');
+
+  function togglePlatform(p) {
+    const chip = document.getElementById('chip-' + p);
+    const cls = 'active-' + p;
+    if (selectedPlatforms.has(p)) {
+      if (selectedPlatforms.size === 1) return; // keep at least one
+      selectedPlatforms.delete(p);
+      chip.classList.remove(cls);
+    } else {
+      selectedPlatforms.add(p);
+      chip.classList.add(cls);
+    }
+  }
+
+  function selectType(btn, type) {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedType = type;
+  }
+
+  function selectTone(btn, tone) {
+    document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedTone = tone;
+  }
+
+  const platformNames = { ig: 'Instagram', fb: 'Facebook', tt: 'TikTok' };
+  const platformTags = { ig: 'tag-ig', fb: 'tag-fb', tt: 'tag-tt' };
+  const platformEmojis = { ig: '📸', fb: '👥', tt: '🎵' };
+
+  const typeLabels = {
+    promo: 'Promotional Post',
+    tip: 'Value / Tip Post',
+    story: 'Personal Story Post',
+    testimonial: 'Testimonial Request',
+    cta: 'Call to Action',
+    reel: 'TikTok/Reel Script'
+  };
+
+  const platformGuidelines = {
+    ig: 'Instagram post: use emojis, line breaks, strong hook first line, 5-10 relevant hashtags at the end. Max ~300 words for caption.',
+    fb: 'Facebook post: slightly longer and more conversational, no need for many hashtags (max 3), encourage comments and shares. Can be up to 400 words.',
+    tt: 'TikTok caption OR video script: very short punchy caption (under 150 chars) PLUS a 30-45 second video script with hook, main content, and CTA. Use trending hooks like "POV:", "Tell me why", "This is your sign to..."'
+  };
+
+  async function generateContent() {
+    const btn = document.getElementById('gen-btn');
+    const outputSection = document.getElementById('output-section');
+    const outputInner = document.getElementById('output-inner');
+    const extraContext = document.getElementById('extra-context').value.trim();
+
+    const platforms = Array.from(selectedPlatforms);
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating...';
+    outputSection.style.display = 'block';
+    outputInner.innerHTML = `
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Crafting your content...</p>
+      </div>`;
+
+    const platformInstructions = platforms.map(p => `
+- ${platformNames[p]}: ${platformGuidelines[p]}`).join('');
+
+    const prompt = `You are a social media content expert helping promote a digital ebook.
+
+BOOK INFO:
+${BOOK_CONTEXT}
+
+TASK: Write a "${typeLabels[selectedType]}" for the following platforms: ${platforms.map(p => platformNames[p]).join(', ')}.
+
+TONE: ${selectedTone}
+
+PLATFORM-SPECIFIC REQUIREMENTS:
+${platformInstructions}
+
+${extraContext ? `EXTRA CONTEXT FROM AUTHOR: ${extraContext}` : ''}
+
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS (use these exact section headers for each platform):
+${platforms.map(p => `### ${platformNames[p].toUpperCase()}_CONTENT ###
+[write the content here]
+### END_${platformNames[p].toUpperCase()} ###`).join('\n\n')}
+
+Make the content authentic, compelling, and platform-native. Drive people to buy the book. Include the link https://selar.com/56822s7411 naturally.`;
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const data = await response.json();
+      const text = data.content?.map(b => b.text || '').join('') || '';
+
+      outputInner.innerHTML = '';
+
+      let hasContent = false;
+
+      platforms.forEach((p, i) => {
+        const pName = platformNames[p].toUpperCase();
+        const regex = new RegExp(`### ${pName}_CONTENT ###([\\s\\S]*?)### END_${pName} ###`, 'i');
+        const match = text.match(regex);
+        const content = match ? match[1].trim() : null;
+
+        if (content) {
+          hasContent = true;
+          const card = document.createElement('div');
+          card.className = 'result-card';
+          card.style.animationDelay = `${i * 0.12}s`;
+          card.innerHTML = `
+            <div class="result-card-header">
+              <span class="platform-tag ${platformTags[p]}">${platformEmojis[p]} ${platformNames[p]}</span>
+              <button class="copy-btn" onclick="copyContent(this, ${JSON.stringify(content)})">
+                📋 Copy
+              </button>
+            </div>
+            <div class="result-content">${escapeHtml(content)}</div>`;
+          outputInner.appendChild(card);
+        }
+      });
+
+      if (!hasContent) {
+        // Fallback: show raw text
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.innerHTML = `<div class="result-content">${escapeHtml(text)}</div>`;
+        outputInner.appendChild(card);
+      }
+
+      const tip = document.createElement('div');
+      tip.className = 'tip-box';
+      tip.innerHTML = '✦ <strong>Pro tip:</strong> Post consistently — 1 piece of content per day across platforms for the first 2 weeks gives you the best shot at organic reach.';
+      outputInner.appendChild(tip);
+
+    } catch (err) {
+      outputInner.innerHTML = `<div class="error-box">Something went wrong. Please try again.<br><small>${err.message}</small></div>`;
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<div class="btn-shimmer"></div>✦ Generate Again';
+  }
+
+  function copyContent(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '📋 Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
